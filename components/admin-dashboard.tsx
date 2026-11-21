@@ -8,7 +8,7 @@ import { formatTzs, makeId, type BakeryCategory, type BakeryProduct, type PriceO
 import { useBakeryStore } from '@/components/bakery-store'
 
 type Section = 'overview' | 'products' | 'categories' | 'settings'
-const emptyProduct = (categoryId: string): BakeryProduct => ({ id: '', name: '', description: '', categoryId, imageUrl: '/placeholder.jpg', pricingType: 'single', basePrice: 0, options: [], available: true, published: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() })
+const emptyProduct = (categoryId: string): BakeryProduct => ({ id: '', name: '', description: '', categoryId, imageUrl: '', pricingType: 'single', basePrice: 0, options: [], available: true, published: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() })
 
 function readOptimizedImage(file: File) {
   return new Promise<string>((resolve, reject) => {

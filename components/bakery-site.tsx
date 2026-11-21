@@ -9,7 +9,8 @@ import { useBakeryStore } from '@/components/bakery-store'
 
 type ProductImageProps = { src: string; alt: string; className?: string }
 function ProductImage({ src, alt, className = '' }: ProductImageProps) {
-  return <Image src={src || '/placeholder.jpg'} alt={alt} fill sizes="(max-width: 700px) 90vw, (max-width: 1100px) 45vw, 30vw" className={className} unoptimized={src.startsWith('data:')} />
+  if (!src) return <span className={`product-image-fallback ${className}`} role="img" aria-label={`${alt}; image not yet added`}><CakeSlice size={26} strokeWidth={1.3} /><span>AM CAKERY</span></span>
+  return <Image src={src} alt={alt} fill sizes="(max-width: 700px) 90vw, (max-width: 1100px) 45vw, 30vw" className={className} unoptimized={src.startsWith('data:')} />
 }
 
 function makeWhatsAppLink(phone: string, message: string) {
