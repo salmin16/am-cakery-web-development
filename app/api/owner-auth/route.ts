@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from 'node:crypto'
+import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { getOwnerSessionToken } from '@/lib/owner-auth'
 
@@ -17,8 +17,8 @@ export async function POST(request: Request) {
   }
 
   if (typeof submitted !== 'string') return NextResponse.json({ error: 'Invalid passkey.' }, { status: 401 })
-  const expected = createHmac('sha256', passkey).update('am-cakery-owner-passkey').digest()
-  const received = createHmac('sha256', passkey).update(submitted).digest()
+  const expected = createHash('sha256').update(passkey).digest()
+  const received = createHash('sha256').update(submitted).digest()
   if (!timingSafeEqual(expected, received)) return NextResponse.json({ error: 'Invalid passkey.' }, { status: 401 })
 
   const response = NextResponse.json({ ok: true })
