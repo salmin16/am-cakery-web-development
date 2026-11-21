@@ -89,8 +89,6 @@ export const initialBakeryData: BakeryData = {
   ],
 }
 
-export const STORAGE_KEY = 'am-cakery-catalogue-v1'
-
 export function formatTzs(value: number) {
   return `TZS ${new Intl.NumberFormat('en-TZ').format(value)}`
 }

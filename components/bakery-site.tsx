@@ -64,7 +64,7 @@ function ProductCard({ product, categoryName, onAdd, onOpenOrder }: { product: B
 }
 
 export function BakerySite() {
-  const { data } = useBakeryStore()
+  const { data, configured, loadError } = useBakeryStore()
   const [categoryId, setCategoryId] = useState('all')
   const [cart, setCart] = useState<CartLine[]>([])
   const [orderOpen, setOrderOpen] = useState(false)
@@ -140,6 +140,8 @@ export function BakerySite() {
 
   return (
     <main>
+      {!configured && <p className="owner-login-error" role="status">Local preview: Supabase is not configured, so starter content is shown and catalogue changes are unavailable.</p>}
+      {loadError && <p className="owner-login-error" role="alert">{loadError}</p>}
       <div className="announcement"><span>Made with care in Dar es Salaam</span><span className="announcement-dot">·</span><a href="#contact">Ubungo Riverside <MapPin size={13} /></a></div>
       <header className="site-header">
         <a href="#home" className="brand-lockup" aria-label="AM CAKERY home"><Image src={data.settings.logoUrl} alt="AM CAKERY — elegant circular cake and floral logo" width={56} height={56} className="brand-logo" unoptimized={data.settings.logoUrl.startsWith('data:')} /><span className="brand-wordmark"><strong>{data.settings.businessName}</strong><small>{data.settings.tagline}</small></span></a>

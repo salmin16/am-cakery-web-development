@@ -1,6 +1,7 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { BakeryStoreProvider } from '@/components/bakery-store'
+import { loadBakeryData } from '@/lib/supabase/catalogue-server'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -17,11 +18,15 @@ export const viewport: Viewport = {
   initialScale: 1,
 }
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export const dynamic = 'force-dynamic'
+
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const { data, configured, error } = await loadBakeryData()
+
   return (
     <html lang="en">
       <body className="antialiased">
-        <BakeryStoreProvider>{children}</BakeryStoreProvider>
+        <BakeryStoreProvider initialData={data} configured={configured} loadError={error}>{children}</BakeryStoreProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
