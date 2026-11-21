@@ -17,7 +17,7 @@ import {
   type BakerySettings,
 } from '@/lib/bakery-data'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
-import { isSupabaseConfigured } from '@/lib/supabase/config'
+import { getSupabaseConfigError, isSupabaseConfigured } from '@/lib/supabase/config'
 import {
   deleteCatalogueItem,
   deleteCategoryAndReassign,
@@ -34,6 +34,7 @@ type BakeryStoreValue = {
   ready: boolean
   error: string | null
   configured: boolean
+  configError: string | null
   refresh: () => Promise<void>
   saveProduct: (product: BakeryProduct) => Promise<BakeryProduct>
   deleteProduct: (id: string) => Promise<void>
@@ -46,13 +47,25 @@ const BakeryStoreContext = createContext<BakeryStoreValue | null>(null)
 
 export function BakeryStoreProvider({ children }: { children: ReactNode }) {
   const configured = isSupabaseConfigured()
+  const configError = getSupabaseConfigError()
   const [data, setData] = useState<BakeryData>(emptyBakeryData)
   const [loading, setLoading] = useState<boolean>(configured)
   const [ready, setReady] = useState<boolean>(!configured)
   const [error, setError] = useState<string | null>(null)
 
   const refresh = useCallback(async () => {
-    const supabase = getSupabaseBrowserClient()
+    let supabase
+    try {
+      supabase = getSupabaseBrowserClient()
+    } catch (reason) {
+      setError(
+        reason instanceof Error ? reason.message : 'Supabase client configuration is invalid.'
+      )
+      setLoading(false)
+      setReady(true)
+      return
+    }
+
     if (!supabase) {
       setLoading(false)
       setReady(true)
@@ -81,7 +94,12 @@ export function BakeryStoreProvider({ children }: { children: ReactNode }) {
   }, [refresh])
 
   useEffect(() => {
-    const supabase = getSupabaseBrowserClient()
+    let supabase
+    try {
+      supabase = getSupabaseBrowserClient()
+    } catch {
+      return
+    }
     if (!supabase) return
 
     const {
@@ -126,7 +144,6 @@ export function BakeryStoreProvider({ children }: { children: ReactNode }) {
         products: current.products.filter((item) => item.id !== id),
       }))
 
-      // Clean up the deleted item's photo from Supabase Storage if no other item uses it.
       if (target?.imageUrl) {
         const stillReferenced = data.products.some(
           (item) => item.id !== id && item.imageUrl === target.imageUrl
@@ -195,6 +212,7 @@ export function BakeryStoreProvider({ children }: { children: ReactNode }) {
       ready,
       error,
       configured,
+      configError,
       refresh,
       saveProduct,
       deleteProduct,
@@ -208,6 +226,7 @@ export function BakeryStoreProvider({ children }: { children: ReactNode }) {
       ready,
       error,
       configured,
+      configError,
       refresh,
       saveProduct,
       deleteProduct,

@@ -79,8 +79,12 @@ create trigger trg_business_settings_updated_at
   for each row execute function public.set_updated_at();
 
 -- ============================================================================
--- 3. Row-Level Security (RLS)
+-- 3. Table Grants & Row-Level Security (RLS)
 -- ============================================================================
+
+grant usage on schema public to anon, authenticated;
+grant select on public.catalogue_items, public.catalogue_categories, public.business_settings to anon;
+grant select, insert, update, delete on public.catalogue_items, public.catalogue_categories, public.business_settings to authenticated;
 
 alter table public.catalogue_items enable row level security;
 alter table public.catalogue_categories enable row level security;

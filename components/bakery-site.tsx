@@ -21,7 +21,13 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import { formatTzs, getDisplayPrice, type BakeryProduct, type CartLine } from '@/lib/bakery-data'
+import {
+  formatTzs,
+  getDisplayPrice,
+  type BakeryData,
+  type BakeryProduct,
+  type CartLine,
+} from '@/lib/bakery-data'
 import { useBakeryStore } from '@/components/bakery-store'
 
 type ProductImageProps = { src: string; alt: string; className?: string }
@@ -140,8 +146,27 @@ function ProductCard({
   )
 }
 
-export function BakerySite() {
-  const { data, loading, ready, error, configured, refresh } = useBakeryStore()
+export function BakerySite({
+  initialData = null,
+  initialError = null,
+}: {
+  initialData?: BakeryData | null
+  initialError?: string | null
+}) {
+  const {
+    data: storeData,
+    loading,
+    ready,
+    error: storeError,
+    configured,
+    configError,
+    refresh,
+  } = useBakeryStore()
+  const hasStoreData = ready && !storeError
+  const data = hasStoreData ? storeData : (initialData ?? storeData)
+  const displayError = hasStoreData ? null : (storeError ?? initialError)
+  const isInitialLoading = loading && !ready && !initialData && !displayError
+
   const [categoryId, setCategoryId] = useState('all')
   const [cart, setCart] = useState<CartLine[]>([])
   const [orderOpen, setOrderOpen] = useState(false)
@@ -156,10 +181,15 @@ export function BakerySite() {
   const [customDate, setCustomDate] = useState('')
 
   const visibleCategories = data.categories.filter((category) => category.published)
+  const hiddenCategoryIds = useMemo(
+    () =>
+      new Set(
+        data.categories.filter((category) => !category.published).map((category) => category.id)
+      ),
+    [data.categories]
+  )
   const products = data.products.filter(
-    (product) =>
-      product.published &&
-      data.categories.some((category) => category.id === product.categoryId && category.published)
+    (product) => product.published && !hiddenCategoryIds.has(product.categoryId)
   )
   const filteredProducts =
     categoryId === 'all'
@@ -448,21 +478,25 @@ export function BakerySite() {
             <AlertCircle size={26} strokeWidth={1.3} />
             <h3>Database connection required.</h3>
             <p>
-              Set <code>NEXT_PUBLIC_SUPABASE_URL</code> and{' '}
-              <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> to load the live catalogue.
+              {configError ?? (
+                <>
+                  Set <code>NEXT_PUBLIC_SUPABASE_URL</code> and{' '}
+                  <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> to load the live catalogue.
+                </>
+              )}
             </p>
           </div>
-        ) : loading && !ready ? (
+        ) : isInitialLoading ? (
           <div className="empty-menu" role="status">
             <Loader2 size={26} strokeWidth={1.4} className="spin" />
             <h3>Opening the bakery menu…</h3>
             <p>Fetching today&apos;s freshly baked treats.</p>
           </div>
-        ) : error && products.length === 0 ? (
+        ) : displayError && products.length === 0 ? (
           <div className="empty-menu" role="alert">
             <AlertCircle size={26} strokeWidth={1.3} />
             <h3>We couldn&apos;t load the menu right now.</h3>
-            <p>{error}</p>
+            <p>{displayError}</p>
             <button className="text-link" type="button" onClick={() => void refresh()}>
               <RefreshCw size={14} /> Try again
             </button>

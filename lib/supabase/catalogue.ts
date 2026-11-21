@@ -42,6 +42,15 @@ type BusinessSettingsRow = {
   logo_url: string
 }
 
+function isMissingTableError(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false
+  return (
+    error.code === '42P01' ||
+    error.code === 'PGRST205' ||
+    Boolean(error.message && /could not find the table|does not exist/i.test(error.message))
+  )
+}
+
 function parsePriceOptions(raw: unknown): PriceOption[] {
   if (!Array.isArray(raw)) return []
   return raw
@@ -98,6 +107,24 @@ function mapSettingsRowToSettings(row: BusinessSettingsRow | null): BakerySettin
   }
 }
 
+function deriveFallbackCategories(products: BakeryProduct[]): BakeryCategory[] {
+  const seen = new Set<string>()
+  const categories: BakeryCategory[] = []
+  for (const product of products) {
+    const id = product.categoryId.trim()
+    if (!id || seen.has(id)) continue
+    seen.add(id)
+    categories.push({
+      id,
+      name: id.charAt(0).toUpperCase() + id.slice(1).replace(/[-_]+/g, ' '),
+      description: '',
+      published: true,
+      createdAt: product.createdAt,
+    })
+  }
+  return categories
+}
+
 export async function fetchBakeryData(supabase: SupabaseClient): Promise<BakeryData> {
   const [itemsResult, categoriesResult, settingsResult] = await Promise.all([
     supabase
@@ -116,24 +143,43 @@ export async function fetchBakeryData(supabase: SupabaseClient): Promise<BakeryD
   ])
 
   if (itemsResult.error) {
+    if (isMissingTableError(itemsResult.error)) {
+      throw new Error(
+        'The "catalogue_items" table does not exist in Supabase yet. Run supabase/schema.sql in your Supabase SQL Editor.'
+      )
+    }
     throw new Error(`Unable to load catalogue items: ${itemsResult.error.message}`)
   }
+
+  const products = ((itemsResult.data ?? []) as CatalogueItemRow[]).map(mapItemRowToProduct)
+
+  let categories: BakeryCategory[]
   if (categoriesResult.error) {
-    throw new Error(`Unable to load categories: ${categoriesResult.error.message}`)
-  }
-  if (settingsResult.error) {
-    throw new Error(`Unable to load business settings: ${settingsResult.error.message}`)
+    if (isMissingTableError(categoriesResult.error)) {
+      categories = deriveFallbackCategories(products)
+    } else {
+      throw new Error(`Unable to load categories: ${categoriesResult.error.message}`)
+    }
+  } else {
+    categories = ((categoriesResult.data ?? []) as CatalogueCategoryRow[]).map(
+      mapCategoryRowToCategory
+    )
   }
 
-  return {
-    products: ((itemsResult.data ?? []) as CatalogueItemRow[]).map(mapItemRowToProduct),
-    categories: ((categoriesResult.data ?? []) as CatalogueCategoryRow[]).map(
-      mapCategoryRowToCategory
-    ),
-    settings: mapSettingsRowToSettings(
+  let settings: BakerySettings
+  if (settingsResult.error) {
+    if (isMissingTableError(settingsResult.error)) {
+      settings = defaultBakerySettings
+    } else {
+      throw new Error(`Unable to load business settings: ${settingsResult.error.message}`)
+    }
+  } else {
+    settings = mapSettingsRowToSettings(
       (settingsResult.data ?? null) as BusinessSettingsRow | null
-    ),
+    )
   }
+
+  return { products, categories, settings }
 }
 
 export async function upsertCatalogueItem(

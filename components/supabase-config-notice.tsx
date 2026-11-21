@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ArrowLeft, Database } from 'lucide-react'
+import { getSupabaseConfigError } from '@/lib/supabase/config'
 
 type SupabaseConfigNoticeProps = {
   title?: string
@@ -10,6 +11,8 @@ export function SupabaseConfigNotice({
   title = 'Supabase environment variables are not configured',
   showBackLink = true,
 }: SupabaseConfigNoticeProps) {
+  const configError = getSupabaseConfigError()
+
   return (
     <main className="auth-page">
       <section className="config-notice-card" role="alert">
@@ -18,10 +21,12 @@ export function SupabaseConfigNotice({
         </div>
         <span className="eyebrow">DEVELOPER SETUP REQUIRED</span>
         <h1>{title}</h1>
+        {configError && <p className="auth-error">{configError}</p>}
         <p>
           This application connects directly to Supabase for authentication, catalogue
           persistence, and cloud image storage. Add the following environment variables
-          to <code>.env.local</code> (or in Vercel Project Settings) and restart/redeploy:
+          to <code>.env.local</code> (or in Vercel Project Settings → Environment Variables)
+          and restart/redeploy:
         </p>
         <ul className="config-env-list">
           <li>
