@@ -24,8 +24,8 @@ export async function POST(request: Request) {
   const response = NextResponse.json({ ok: true })
   response.cookies.set('am-owner-session', getOwnerSessionToken(), {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: true,
+    sameSite: 'none',
     path: '/admin',
     maxAge: 60 * 60 * 8,
   })

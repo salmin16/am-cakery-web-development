@@ -17,7 +17,7 @@ export function OwnerLogin() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ passkey }),
       })
-      if (response.ok) window.location.reload()
+      if (response.ok) window.location.assign('/admin')
       else setError('That passkey is not correct. Please try again.')
     } catch {
       setError('Unable to verify your passkey right now. Please try again.')
